@@ -1316,7 +1316,25 @@ static void *rwrap_load_lib_handle(enum rwrap_lib lib)
 	int i;
 
 #ifdef RTLD_DEEPBIND
-	flags |= RTLD_DEEPBIND;
+	const char *env_preload = getenv("LD_PRELOAD");
+	const char *env_deepbind = getenv("RESOLV_WRAPPER_DISABLE_DEEPBIND");
+	bool enable_deepbind = true;
+
+	/* Don't do a deepbind if we run with libasan */
+	if (env_preload != NULL && strlen(env_preload) < 1024) {
+		const char *p = strstr(env_preload, "libasan.so");
+		if (p != NULL) {
+			enable_deepbind = false;
+		}
+	}
+
+	if (env_deepbind != NULL && strlen(env_deepbind) >= 1) {
+		enable_deepbind = false;
+	}
+
+	if (enable_deepbind) {
+		flags |= RTLD_DEEPBIND;
+	}
 #endif
 
 	switch (lib) {
