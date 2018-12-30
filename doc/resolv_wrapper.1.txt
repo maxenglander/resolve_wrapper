@@ -48,6 +48,7 @@ For example:
     CNAME   kerberos.cwrap.org dc.cwrap.org
     SRV     _kerberos._tcp.cwrap.org kerberos.cwrap.org 88
     URI     _vpn.cwrap.org https://vpn.cwrap.org/VPN
+    TXT     cwrap.org v=spf1 mx
 
 *RESOLV_WRAPPER_DEBUGLEVEL*::
 

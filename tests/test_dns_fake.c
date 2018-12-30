@@ -714,6 +714,40 @@ static void test_res_fake_ptr_query(void **state)
 	assert_string_equal(ptrname, "www.cwrap.org");
 }
 
+static void test_res_fake_txt_query(void **state)
+{
+	int rv;
+	struct __res_state dnsstate;
+	unsigned char answer[ANSIZE];
+	ns_msg handle;
+	ns_rr rr;   /* expanded resource record */
+	const uint8_t *rrdata;
+
+	(void) state; /* unused */
+
+	memset(&dnsstate, 0, sizeof(struct __res_state));
+	rv = res_ninit(&dnsstate);
+	assert_int_equal(rv, 0);
+
+	rv = res_nquery(&dnsstate, "cwrap.org", ns_c_in, ns_t_txt,
+			answer, sizeof(answer));
+	assert_in_range(rv, 1, 256);
+
+	ns_initparse(answer, sizeof(answer), &handle);
+
+	/*
+	 * The query must finish w/o an error, have one answer and the answer
+	 * must be a parseable RR of type TXT
+	 */
+	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
+	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
+	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_txt);
+
+	rrdata = ns_rr_rdata(rr);
+	assert_string_equal(rrdata, "v=spf1 mx");
+}
+
 int main(void)
 {
 	int rc;
@@ -733,6 +767,7 @@ int main(void)
 		cmocka_unit_test(test_res_fake_cname_query),
 		cmocka_unit_test(test_res_fake_a_via_cname),
 		cmocka_unit_test(test_res_fake_ptr_query),
+		cmocka_unit_test(test_res_fake_txt_query),
 	};
 
 	rc = cmocka_run_group_tests(fake_tests, NULL, NULL);
