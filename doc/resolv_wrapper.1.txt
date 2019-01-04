@@ -1,6 +1,6 @@
 resolv_wrapper(1)
 =================
-:revdate: 2015-08-18
+:revdate: 2019-01-04
 
 NAME
 ----
@@ -59,6 +59,11 @@ debug symbols.
 - 1 = WARNING
 - 2 = DEBUG
 - 3 = TRACE
+
+*RESOLV_WRAPPER_DISABLE_DEEPBIND*::
+
+This allows you to disable deep binding in resolv_wrapper. This is useful for
+running valgrind tools or sanitizers like (address, undefined, thread).
 
 EXAMPLE
 -------
