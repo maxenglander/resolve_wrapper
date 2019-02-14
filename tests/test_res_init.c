@@ -121,26 +121,17 @@ static void test_res_ninit(void **state)
 
 	/*
 	 * Validate the number of parsed name servers.
-	 */
-
-	assert_int_equal(dnsstate.nscount + dnsstate._u._ext.nscount, MAXNS);
-
-#ifndef HAVE_RESOLV_IPV6_NSADDRS
-	/*
+	*
 	 * On platforms that don't support IPv6, the v6 address is skipped
 	 * and we end up reading three v4 addresses.
-	 */
-	assert_int_equal(dnsstate.nscount, MAXNS);
-#else
-	/*
+	 *
 	 * test we have two v4 and one v6 server
 	 *
 	 * Note: This test assumes MAXNS == 3, which is the
 	 * case on all systems encountered so far.
 	 */
-	assert_int_equal(dnsstate.nscount, 2);
-	assert_int_equal(dnsstate._u._ext.nscount, 1);
-#endif /* HAVE_RESOLV_IPV6_NSADDRS */
+	assert_int_equal(MAXNS, 3);
+	assert_int_equal(dnsstate.nscount, MAXNS);
 
 	/* Validate the servers. */
 
@@ -150,12 +141,18 @@ static void test_res_ninit(void **state)
 	inet_ntop(AF_INET, &(dnsstate.nsaddr_list[0].sin_addr),
 		  straddr, INET6_ADDRSTRLEN);
 	assert_string_equal(nameservers[0], straddr);
+#ifdef HAVE_RESOLV_IPV6_NSADDRS
+	assert_null(dnsstate._u._ext.nsaddrs[0]);
+#endif
 
 	assert_int_equal(dnsstate.nsaddr_list[1].sin_family, AF_INET);
 	assert_int_equal(dnsstate.nsaddr_list[1].sin_port, htons(53));
 	inet_ntop(AF_INET, &(dnsstate.nsaddr_list[1].sin_addr),
 		  straddr, INET6_ADDRSTRLEN);
 	assert_string_equal(nameservers[1], straddr);
+#ifdef HAVE_RESOLV_IPV6_NSADDRS
+	assert_null(dnsstate._u._ext.nsaddrs[1]);
+#endif
 
 #ifndef HAVE_RESOLV_IPV6_NSADDRS
 	/*
@@ -169,7 +166,8 @@ static void test_res_ninit(void **state)
 	assert_string_equal(nameservers[3], straddr);
 #else
 	/* IPv6 */
-	sa6 = dnsstate._u._ext.nsaddrs[0];
+	assert_non_null(dnsstate._u._ext.nsaddrs[2]);
+	sa6 = dnsstate._u._ext.nsaddrs[2];
 	assert_int_equal(sa6->sin6_family, AF_INET6);
 	assert_int_equal(sa6->sin6_port, htons(53));
 	inet_ntop(AF_INET6, &(sa6->sin6_addr), straddr, INET6_ADDRSTRLEN);

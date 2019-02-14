@@ -1645,14 +1645,13 @@ static int rwrap_parse_resolv_conf(struct __res_state *state,
 
 			ok = inet_pton(AF_INET, p, &a);
 			if (ok) {
-				state->nsaddr_list[state->nscount] = (struct sockaddr_in) {
+				state->nsaddr_list[nserv] = (struct sockaddr_in) {
 					.sin_family = AF_INET,
 					.sin_addr = a,
 					.sin_port = htons(53),
 					.sin_zero = { 0 },
 				};
 
-				state->nscount++;
 				nserv++;
 			} else {
 #ifdef HAVE_RESOLV_IPV6_NSADDRS
@@ -1673,11 +1672,11 @@ static int rwrap_parse_resolv_conf(struct __res_state *state,
 					sa6->sin6_flowinfo = 0;
 					sa6->sin6_addr = a6;
 
-					state->_u._ext.nsaddrs[state->_u._ext.nscount] = sa6;
-					state->_u._ext.nssocks[state->_u._ext.nscount] = -1;
-					state->_u._ext.nsmap[state->_u._ext.nscount] = MAXNS + 1;
+					state->_u._ext.nsaddrs[nserv] = sa6;
+					state->_u._ext.nssocks[nserv] = -1;
+					state->_u._ext.nsmap[nserv] = MAXNS + 1;
 
-					state->_u._ext.nscount++;
+					state->_u._ext.nscount6++;
 					nserv++;
 				} else {
 					RWRAP_LOG(RWRAP_LOG_ERROR,
@@ -1699,6 +1698,13 @@ static int rwrap_parse_resolv_conf(struct __res_state *state,
 			continue;
 		} /* TODO: match other keywords */
 	}
+
+	/*
+	 * note that state->_u._ext.nscount is left as 0,
+	 * this matches glibc and allows resolv wrapper
+	 * to work with most (maybe all) glibc versions.
+	 */
+	state->nscount = nserv;
 
 	if (ferror(fp)) {
 		RWRAP_LOG(RWRAP_LOG_ERROR,
@@ -1725,21 +1731,36 @@ static int rwrap_res_ninit(struct __res_state *state)
 		const char *resolv_conf = getenv("RESOLV_WRAPPER_CONF");
 
 		if (resolv_conf != NULL) {
+			/* Delete name servers */
+#ifdef HAVE_RESOLV_IPV6_NSADDRS
 			uint16_t i;
 
-			(void)i; /* maybe unused */
+			for (i = 0; i < state->nscount; i++) {
+				if (state->_u._ext.nssocks[i] != -1) {
+					close(state->_u._ext.nssocks[i]);
+					state->_u._ext.nssocks[i] = -1;
+				}
 
-			/* Delete name servers */
-			state->nscount = 0;
-			memset(state->nsaddr_list, 0, sizeof(state->nsaddr_list));
-
-#ifdef HAVE_RESOLV_IPV6_NSADDRS
-			state->_u._ext.nscount = 0;
-			for (i = 0; i < state->_u._ext.nscount; i++) {
 				SAFE_FREE(state->_u._ext.nsaddrs[i]);
 			}
 #endif
 
+			state->nscount = 0;
+			memset(state->nsaddr_list, 0, sizeof(state->nsaddr_list));
+
+#ifdef HAVE_RESOLV_IPV6_NSADDRS
+			state->ipv6_unavail = false;
+			state->_u._ext.nsinit = 0;
+			state->_u._ext.nscount = 0;
+			state->_u._ext.nscount6 = 0;
+			for (i = 0; i < MAXNS; i++) {
+				state->_u._ext.nsaddrs[i] = NULL;
+				state->_u._ext.nssocks[i] = -1;
+				state->_u._ext.nsmap[i] = MAXNS;
+			}
+#endif
+
+			/* And parse the new name servers */
 			rc = rwrap_parse_resolv_conf(state, resolv_conf);
 		}
 	}
@@ -1786,19 +1807,7 @@ int __res_init(void)
 
 static void rwrap_res_nclose(struct __res_state *state)
 {
-#ifdef HAVE_RESOLV_IPV6_NSADDRS
-	int i;
-#endif
-
 	libc_res_nclose(state);
-
-#ifdef HAVE_RESOLV_IPV6_NSADDRS
-	if (state != NULL) {
-		for (i = 0; i < state->_u._ext.nscount; i++) {
-			SAFE_FREE(state->_u._ext.nsaddrs[i]);
-		}
-	}
-#endif
 }
 
 #if !defined(res_nclose) && defined(HAVE_RES_NCLOSE)
