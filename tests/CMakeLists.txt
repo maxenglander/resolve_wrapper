@@ -35,7 +35,7 @@ set(RWRAP_TESTS
 set(PRELOAD_LIBS ${RESOLV_WRAPPER_LOCATION})
 
 # Some tests require socket_wrapper as well.
-find_package(socket_wrapper)
+find_package(socket_wrapper REQUIRED)
 
 # On Solaris the socket functions are compiled into libresolv.so so we can't preload
 # socket_wrapper. Only faking will work!
