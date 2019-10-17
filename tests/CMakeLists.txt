@@ -29,50 +29,61 @@ target_link_libraries(${TORTURE_LIBRARY}
 
 set(TESTSUITE_LIBRARIES ${RWRAP_REQUIRED_LIBRARIES} ${CMOCKA_LIBRARY})
 
-set(RWRAP_TESTS
-    test_res_init)
-
-set(PRELOAD_LIBS ${RESOLV_WRAPPER_LOCATION})
-
 # Some tests require socket_wrapper as well.
 find_package(socket_wrapper REQUIRED)
 
-# On Solaris the socket functions are compiled into libresolv.so so we can't preload
-# socket_wrapper. Only faking will work!
-if (HAVE_LIBRESOLV AND SOCKET_WRAPPER_LIBRARY AND NOT SOLARIS)
+set(RWRAP_TESTS test_res_init)
+
+if (HAVE_LIBRESOLV)
     set(RWRAP_TESTS ${RWRAP_TESTS} test_res_query_search)
-    set(PRELOAD_LIBS ${RESOLV_WRAPPER_LOCATION}:${SOCKET_WRAPPER_LIBRARY})
 endif()
+
+function(ADD_CMOCKA_TEST_ENVIRONMENT _TEST_NAME)
+    if (CMAKE_BUILD_TYPE)
+        string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
+        if (CMAKE_BUILD_TYPE_LOWER STREQUAL "addresssanitizer")
+            find_library(ASAN_LIBRARY
+                         NAMES asan)
+            if (NOT ASAN_LIBRARY)
+                foreach(version RANGE 10 1)
+                    if (NOT ASAN_LIBRARY)
+                        find_library(ASAN_LIBRARY libasan.so.${version})
+                    endif()
+                endforeach()
+            endif()
+        endif()
+    endif()
+
+    if (ASAN_LIBRARY)
+        list(APPEND PRELOAD_LIBRARIES ${ASAN_LIBRARY})
+    endif()
+    list(APPEND PRELOAD_LIBRARIES ${RESOLV_WRAPPER_LOCATION})
+    list(APPEND PRELOAD_LIBRARIES ${SOCKET_WRAPPER_LIBRARY})
+
+    if (OSX)
+        set(TORTURE_ENVIRONMENT "DYLD_FORCE_FLAT_NAMESPACE=1;DYLD_INSERT_LIBRARIES=${RESOLV_WRAPPER_LOCATION}:${SOCKET_WRAPPER_LIBRARY}")
+    else ()
+        string(REPLACE ";" ":" _TMP_ENV "${PRELOAD_LIBRARIES}")
+        set(TORTURE_ENVIRONMENT "LD_PRELOAD=${_TMP_ENV}")
+    endif()
+
+    list(APPEND TORTURE_ENVIRONMENT RESOLV_WRAPPER=1)
+
+    foreach(_arg ${ARGN})
+        list(APPEND TORTURE_ENVIRONMENT ${_arg})
+    endforeach()
+
+    set_property(TEST
+                    ${_TEST_NAME}
+                PROPERTY
+                    ENVIRONMENT "${TORTURE_ENVIRONMENT}")
+endfunction()
 
 foreach(_RWRAP_TEST ${RWRAP_TESTS})
     add_cmocka_test(${_RWRAP_TEST} ${_RWRAP_TEST}.c ${TORTURE_LIBRARY} ${TESTSUITE_LIBRARIES})
 
-    if (OSX)
-        set_property(
-            TEST
-                ${_RWRAP_TEST}
-            PROPERTY
-                ENVIRONMENT DYLD_FORCE_FLAT_NAMESPACE=1;DYLD_INSERT_LIBRARIES=${PRELOAD_LIBS})
-    else ()
-        set_property(
-            TEST
-                ${_RWRAP_TEST}
-            PROPERTY
-                ENVIRONMENT LD_PRELOAD=${PRELOAD_LIBS})
-    endif()
+    add_cmocka_test_environment(${_RWRAP_TEST})
 endforeach()
 
 add_cmocka_test(test_dns_fake test_dns_fake.c ${TORTURE_LIBRARY} ${TESTSUITE_LIBRARIES})
-if (OSX)
-    set_property(
-        TEST
-            test_dns_fake
-        PROPERTY
-        ENVIRONMENT DYLD_FORCE_FLAT_NAMESPACE=1;DYLD_INSERT_LIBRARIES=${PRELOAD_LIBS};RESOLV_WRAPPER_HOSTS=${CMAKE_CURRENT_BINARY_DIR}/fake_hosts)
-else ()
-    set_property(
-        TEST
-            test_dns_fake
-        PROPERTY
-            ENVIRONMENT LD_PRELOAD=${PRELOAD_LIBS};RESOLV_WRAPPER_HOSTS=${CMAKE_CURRENT_BINARY_DIR}/fake_hosts)
-endif ()
+add_cmocka_test_environment(test_dns_fake RESOLV_WRAPPER_HOSTS=${CMAKE_CURRENT_BINARY_DIR}/fake_hosts)
