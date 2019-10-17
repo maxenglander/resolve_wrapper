@@ -11,14 +11,17 @@ set(TORTURE_LIBRARY torture)
 
 # A simple DNS server for testing
 add_executable(dns_srv dns_srv.c)
+target_compile_options(dns_srv PRIVATE ${DEFAULT_C_COMPILE_FLAGS})
 target_link_libraries(dns_srv ${RWRAP_REQUIRED_LIBRARIES})
 
 add_executable(test_real_res_query test_real_res_query.c)
+target_compile_options(test_real_res_query PRIVATE ${DEFAULT_C_COMPILE_FLAGS})
 target_link_libraries(test_real_res_query ${RWRAP_REQUIRED_LIBRARIES} ${CMOCKA_LIBRARY})
 
 configure_file(fake_hosts.in ${CMAKE_CURRENT_BINARY_DIR}/fake_hosts @ONLY)
 
 add_library(${TORTURE_LIBRARY} STATIC torture.c)
+target_compile_options(${TORTURE_LIBRARY} PRIVATE ${DEFAULT_C_COMPILE_FLAGS})
 target_link_libraries(${TORTURE_LIBRARY}
     ${CMOCKA_LIBRARY}
     ${SWRAP_REQUIRED_LIBRARIES})

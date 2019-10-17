@@ -28,6 +28,7 @@ include(DefinePlatformDefaults)
 include(DefineInstallationPaths)
 include(DefineOptions.cmake)
 include(CPackConfig.cmake)
+include(CompilerChecks.cmake)
 
 # disallow in-source build
 include(MacroEnsureOutOfSourceBuild)
@@ -40,9 +41,6 @@ find_package(Threads)
 # config.h checks
 include(ConfigureChecks.cmake)
 configure_file(config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-
-# Add compiler flags for the project now.
-include(DefineCompilerFlags)
 
 # check subdirectories
 add_subdirectory(src)

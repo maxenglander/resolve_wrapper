@@ -4,6 +4,10 @@ include_directories(${CMAKE_BINARY_DIR})
 add_library(resolv_wrapper SHARED resolv_wrapper.c)
 target_link_libraries(resolv_wrapper ${RWRAP_REQUIRED_LIBRARIES})
 
+target_compile_options(resolv_wrapper
+                       PRIVATE
+                           ${DEFAULT_C_COMPILE_FLAGS})
+
 set_target_properties(
   resolv_wrapper
     PROPERTIES
