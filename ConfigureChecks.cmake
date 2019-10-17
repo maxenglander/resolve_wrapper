@@ -42,7 +42,7 @@ if(CMAKE_COMPILER_IS_GNUCC AND NOT MINGW AND NOT OS2)
 "void __attribute__((visibility(\"default\"))) test() {}
 int main(void){ return 0; }
 " WITH_VISIBILITY_HIDDEN)
-        set(CMAKE_REQUIRED_FLAGS "")
+        unset(CMAKE_REQUIRED_FLAGS)
     endif (NOT GNUCC_VERSION EQUAL 34)
 endif(CMAKE_COMPILER_IS_GNUCC AND NOT MINGW AND NOT OS2)
 
