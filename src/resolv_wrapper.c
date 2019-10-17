@@ -397,29 +397,30 @@ static int rwrap_create_fake_ptr_rr(const char *key,
 static ssize_t rwrap_fake_header(uint8_t **header_blob, size_t remaining,
 			         size_t ancount, size_t arcount)
 {
-	uint8_t *hb;
-	HEADER *h;
+	union {
+		uint8_t *blob;
+		HEADER *header;
+	} h;
 
 	if (remaining < NS_HFIXEDSZ) {
 		RWRAP_LOG(RWRAP_LOG_ERROR, "Buffer too small!\n");
 		return -1;
 	}
 
-	hb = *header_blob;
-	memset(hb, 0, NS_HFIXEDSZ);
+	h.blob = *header_blob;
+	memset(h.blob, 0, NS_HFIXEDSZ);
 
-	h = (HEADER *) hb;
-	h->id = res_randomid();		/* random query ID */
-	h->qr = 1;			/* response flag */
-	h->rd = 1;			/* recursion desired */
-	h->ra = 1;			/* recursion available */
+	h.header->id = res_randomid();		/* random query ID */
+	h.header->qr = 1;			/* response flag */
+	h.header->rd = 1;			/* recursion desired */
+	h.header->ra = 1;			/* recursion available */
 
-	h->qdcount = htons(1);		/* no. of questions */
-	h->ancount = htons(ancount);	/* no. of answers */
-	h->arcount = htons(arcount);	/* no. of add'tl records */
+	h.header->qdcount = htons(1);		/* no. of questions */
+	h.header->ancount = htons(ancount);	/* no. of answers */
+	h.header->arcount = htons(arcount);	/* no. of add'tl records */
 
-	hb += NS_HFIXEDSZ;		/* move past the header */
-	*header_blob = hb;
+	/* move past the header */
+	*header_blob = h.blob += NS_HFIXEDSZ;
 
 	return NS_HFIXEDSZ;
 }
