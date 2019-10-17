@@ -80,10 +80,18 @@ function(ADD_CMOCKA_TEST_ENVIRONMENT _TEST_NAME)
 endfunction()
 
 foreach(_RWRAP_TEST ${RWRAP_TESTS})
-    add_cmocka_test(${_RWRAP_TEST} ${_RWRAP_TEST}.c ${TORTURE_LIBRARY} ${TESTSUITE_LIBRARIES})
+    add_cmocka_test(${_RWRAP_TEST}
+                    SOURCES ${_RWRAP_TEST}.c
+                    COMPILE_OPTIONS ${DEFAULT_C_COMPILE_FLAGS}
+                    LINK_LIBRARIES ${TORTURE_LIBRARY} ${TESTSUITE_LIBRARIES}
+                    LINK_OPTIONS ${DEFAULT_LINK_FLAGS})
 
     add_cmocka_test_environment(${_RWRAP_TEST})
 endforeach()
 
-add_cmocka_test(test_dns_fake test_dns_fake.c ${TORTURE_LIBRARY} ${TESTSUITE_LIBRARIES})
+add_cmocka_test(test_dns_fake
+                SOURCES test_dns_fake.c
+                COMPILE_OPTIONS ${DEFAULT_C_COMPILE_FLAGS}
+                LINK_LIBRARIES ${TORTURE_LIBRARY} ${TESTSUITE_LIBRARIES}
+                LINK_OPTIONS ${DEFAULT_LINK_FLAGS})
 add_cmocka_test_environment(test_dns_fake RESOLV_WRAPPER_HOSTS=${CMAKE_CURRENT_BINARY_DIR}/fake_hosts)
