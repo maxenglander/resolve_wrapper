@@ -1,27 +1,23 @@
 project(tests C)
 
-include_directories(
-  ${CMAKE_BINARY_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/src
-  ${CMOCKA_INCLUDE_DIR}
-)
-
 set(TORTURE_LIBRARY torture)
 
 # A simple DNS server for testing
 add_executable(dns_srv dns_srv.c)
 target_compile_options(dns_srv PRIVATE ${DEFAULT_C_COMPILE_FLAGS})
+target_include_directories(dns_srv PRIVATE ${CMAKE_BINARY_DIR})
 target_link_libraries(dns_srv ${RWRAP_REQUIRED_LIBRARIES})
 
 add_executable(test_real_res_query test_real_res_query.c)
 target_compile_options(test_real_res_query PRIVATE ${DEFAULT_C_COMPILE_FLAGS})
+target_include_directories(test_real_res_query PRIVATE ${CMAKE_BINARY_DIR} ${CMOCKA_INCLUDE_DIR})
 target_link_libraries(test_real_res_query ${RWRAP_REQUIRED_LIBRARIES} ${CMOCKA_LIBRARY})
 
 configure_file(fake_hosts.in ${CMAKE_CURRENT_BINARY_DIR}/fake_hosts @ONLY)
 
 add_library(${TORTURE_LIBRARY} STATIC torture.c)
 target_compile_options(${TORTURE_LIBRARY} PRIVATE ${DEFAULT_C_COMPILE_FLAGS})
+target_include_directories(${TORTURE_LIBRARY} PRIVATE ${CMAKE_BINARY_DIR} ${CMOCKA_INCLUDE_DIR})
 target_link_libraries(${TORTURE_LIBRARY}
     ${CMOCKA_LIBRARY}
     ${SWRAP_REQUIRED_LIBRARIES})
@@ -85,6 +81,7 @@ foreach(_RWRAP_TEST ${RWRAP_TESTS})
                     COMPILE_OPTIONS ${DEFAULT_C_COMPILE_FLAGS}
                     LINK_LIBRARIES ${TORTURE_LIBRARY} ${TESTSUITE_LIBRARIES}
                     LINK_OPTIONS ${DEFAULT_LINK_FLAGS})
+    target_include_directories(${_RWRAP_TEST} PRIVATE ${CMAKE_BINARY_DIR} ${CMOCKA_INCLUDE_DIR})
 
     add_cmocka_test_environment(${_RWRAP_TEST})
 endforeach()
@@ -94,4 +91,5 @@ add_cmocka_test(test_dns_fake
                 COMPILE_OPTIONS ${DEFAULT_C_COMPILE_FLAGS}
                 LINK_LIBRARIES ${TORTURE_LIBRARY} ${TESTSUITE_LIBRARIES}
                 LINK_OPTIONS ${DEFAULT_LINK_FLAGS})
+target_include_directories(test_dns_fake PRIVATE ${CMAKE_BINARY_DIR} ${CMOCKA_INCLUDE_DIR})
 add_cmocka_test_environment(test_dns_fake RESOLV_WRAPPER_HOSTS=${CMAKE_CURRENT_BINARY_DIR}/fake_hosts)
