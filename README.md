@@ -8,11 +8,11 @@ DESCRIPTION
 
 More details can be found in the manpage:
 
-  man -l ./doc/resolv_wrapper.1
+    man -l ./doc/resolv_wrapper.1
 
 or the raw text version:
 
-  less ./doc/resolv_wrapper.1.txt
+    less ./doc/resolv_wrapper.1.txt
 
 For installation instructions please take a look at the README.install file.
 
