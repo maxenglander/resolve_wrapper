@@ -1,16 +1,11 @@
-project(resolv_wrapper C)
-
 # Required cmake version
-cmake_minimum_required(VERSION 2.8.0)
+cmake_minimum_required(VERSION 3.5.0)
+cmake_policy(SET CMP0048 NEW)
+
+project(resolv_wrapper VERSION 1.1.5 LANGUAGES C)
 
 # global needed variables
 set(APPLICATION_NAME ${PROJECT_NAME})
-
-set(APPLICATION_VERSION_MAJOR "1")
-set(APPLICATION_VERSION_MINOR "1")
-set(APPLICATION_VERSION_PATCH "5")
-
-set(APPLICATION_VERSION "${APPLICATION_VERSION_MAJOR}.${APPLICATION_VERSION_MINOR}.${APPLICATION_VERSION_PATCH}")
 
 # SOVERSION scheme: CURRENT.AGE.REVISION
 #   If there was an incompatible interface change:

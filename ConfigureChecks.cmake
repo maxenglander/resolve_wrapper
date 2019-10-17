@@ -7,15 +7,15 @@ include(CheckStructHasMember)
 include(CheckPrototypeDefinition)
 include(TestBigEndian)
 
-set(PACKAGE ${APPLICATION_NAME})
-set(VERSION ${APPLICATION_VERSION})
+set(PACKAGE ${PROJECT_NAME})
+set(VERSION ${PROJECT_VERSION})
 set(DATADIR ${DATA_INSTALL_DIR})
 set(LIBDIR ${LIB_INSTALL_DIR})
 set(PLUGINDIR "${PLUGIN_INSTALL_DIR}-${LIBRARY_SOVERSION}")
 set(SYSCONFDIR ${SYSCONF_INSTALL_DIR})
 
-set(BINARYDIR ${CMAKE_BINARY_DIR})
-set(SOURCEDIR ${CMAKE_SOURCE_DIR})
+set(BINARYDIR ${resolv_wrapper_BINARY_DIR})
+set(SOURCEDIR ${resolv_wrapper_SOURCE_DIR})
 
 function(COMPILER_DUMPVERSION _OUTPUT_VERSION)
     # Remove whitespaces from the argument.
