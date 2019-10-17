@@ -1,4 +1,2 @@
-install(FILES
-            resolv_wrapper.1
-        DESTINATION
-            ${MAN_INSTALL_DIR}/man1)
+install(FILES resolv_wrapper.1
+        DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)

@@ -7,13 +7,6 @@ include(CheckStructHasMember)
 include(CheckPrototypeDefinition)
 include(TestBigEndian)
 
-set(PACKAGE ${PROJECT_NAME})
-set(VERSION ${PROJECT_VERSION})
-set(DATADIR ${DATA_INSTALL_DIR})
-set(LIBDIR ${LIB_INSTALL_DIR})
-set(PLUGINDIR "${PLUGIN_INSTALL_DIR}-${LIBRARY_SOVERSION}")
-set(SYSCONFDIR ${SYSCONF_INSTALL_DIR})
-
 set(BINARYDIR ${resolv_wrapper_BINARY_DIR})
 set(SOURCEDIR ${resolv_wrapper_SOURCE_DIR})
 

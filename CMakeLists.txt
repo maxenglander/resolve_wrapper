@@ -33,7 +33,7 @@ set(CMAKE_MODULE_PATH
 
 # add definitions
 include(DefinePlatformDefaults)
-include(DefineInstallationPaths)
+include(GNUInstallDirs)
 include(DefineOptions.cmake)
 include(CPackConfig.cmake)
 include(CompilerChecks.cmake)
@@ -61,7 +61,7 @@ install(
   FILES
     ${CMAKE_CURRENT_BINARY_DIR}/resolv_wrapper.pc
   DESTINATION
-    ${LIB_INSTALL_DIR}/pkgconfig
+     ${CMAKE_INSTALL_LIBDIR}/pkgconfig
   COMPONENT
     pkgconfig
 )
@@ -74,7 +74,7 @@ install(
         ${CMAKE_CURRENT_BINARY_DIR}/resolv_wrapper-config-version.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/resolv_wrapper-config.cmake
     DESTINATION
-        ${CMAKE_INSTALL_DIR}/resolv_wrapper
+        ${CMAKE_INSTALL_LIBDIR}/cmake/resolv_wrapper
     COMPONENT
         devel
 )
