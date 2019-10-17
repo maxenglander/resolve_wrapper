@@ -1491,21 +1491,13 @@ static void *_rwrap_bind_symbol(enum rwrap_lib lib, const char *fn_name)
 static int libc_res_ninit(struct __res_state *state)
 {
 #if !defined(res_ninit) && defined(HAVE_RES_NINIT)
-
-#if defined(HAVE_RES_NINIT_IN_LIBRESOLV)
 	rwrap_bind_symbol_libresolv(res_ninit);
 
 	return rwrap.libresolv.symbols._libc_res_ninit.f(state);
-#else /* HAVE_RES_NINIT_IN_LIBRESOLV */
-	rwrap_bind_symbol_libc(res_ninit);
-
-	return rwrap.libc.symbols._libc_res_ninit.f(state);
-#endif /* HAVE_RES_NINIT_IN_LIBRESOLV */
-
 #elif defined(HAVE___RES_NINIT)
-	rwrap_bind_symbol_libc(__res_ninit);
+	rwrap_bind_symbol_libresolv(__res_ninit);
 
-	return rwrap.libc.symbols._libc___res_ninit.f(state);
+	return rwrap.libresolv.symbols._libc___res_ninit.f(state);
 #else
 #error "No res_ninit function"
 #endif
@@ -1514,23 +1506,14 @@ static int libc_res_ninit(struct __res_state *state)
 static void libc_res_nclose(struct __res_state *state)
 {
 #if !defined(res_close) && defined(HAVE_RES_NCLOSE)
-
-#if defined(HAVE_RES_NCLOSE_IN_LIBRESOLV)
 	rwrap_bind_symbol_libresolv(res_nclose);
 
 	rwrap.libresolv.symbols._libc_res_nclose.f(state);
 	return;
-#else /* HAVE_RES_NCLOSE_IN_LIBRESOLV */
-	rwrap_bind_symbol_libc(res_nclose);
-
-	rwrap.libc.symbols._libc_res_nclose.f(state);
-	return;
-#endif /* HAVE_RES_NCLOSE_IN_LIBRESOLV */
-
 #elif defined(HAVE___RES_NCLOSE)
-	rwrap_bind_symbol_libc(__res_nclose);
+	rwrap_bind_symbol_libresolv(__res_nclose);
 
-	rwrap.libc.symbols._libc___res_nclose.f(state);
+	rwrap.libresolv.symbols._libc___res_nclose.f(state);
 #else
 #error "No res_nclose function"
 #endif

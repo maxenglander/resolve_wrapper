@@ -54,46 +54,57 @@ check_include_file(arpa/nameser.h HAVE_ARPA_NAMESER_H)
 # FUNCTIONS
 find_library(RESOLV_LIRBRARY resolv)
 if (RESOLV_LIRBRARY)
-    check_library_exists(${RESOLV_LIRBRARY} res_send "" RES_SEND_IN_LIBRESOLV)
-    check_library_exists(${RESOLV_LIRBRARY} __res_send "" __RES_SEND_IN_LIBRESOLV)
-    if (RES_SEND_IN_LIBRESOLV OR __RES_SEND_IN_LIBRESOLV)
-        set(HAVE_LIBRESOLV TRUE)
-    endif()
+    set(HAVE_LIBRESOLV TRUE)
 
     # If we have a libresolv, we need to check functions linking the library
-    set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
+    list(APPEND _REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
+else()
+    message(STATUS "libresolv not found on ${CMAKE_SYSTEM_NAME}: Only dns faking will be available")
 endif()
 
+set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
+check_function_exists(res_send HAVE_RES_SEND)
+check_function_exists(__res_send HAVE___RES_SEND)
+unset(CMAKE_REQUIRED_LIBRARIES)
+
+set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_init HAVE_RES_INIT)
 check_function_exists(__res_init HAVE___RES_INIT)
+unset(CMAKE_REQUIRED_LIBRARIES)
 
+set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_ninit HAVE_RES_NINIT)
 check_function_exists(__res_ninit HAVE___RES_NINIT)
-if (RESOLV_LIRBRARY)
-    check_library_exists(${RESOLV_LIRBRARY} res_ninit "" HAVE_RES_NINIT_IN_LIBRESOLV)
-endif()
+unset(CMAKE_REQUIRED_LIBRARIES)
 
+set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_close HAVE_RES_CLOSE)
 check_function_exists(__res_close HAVE___RES_CLOSE)
+unset(CMAKE_REQUIRED_LIBRARIES)
 
+set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_nclose HAVE_RES_NCLOSE)
 check_function_exists(__res_nclose HAVE___RES_NCLOSE)
-if (RESOLV_LIRBRARY)
-    check_library_exists(${RESOLV_LIRBRARY} res_nclose "" HAVE_RES_NCLOSE_IN_LIBRESOLV)
-endif()
+unset(CMAKE_REQUIRED_LIBRARIES)
 
+set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_query HAVE_RES_QUERY)
 check_function_exists(__res_query HAVE___RES_QUERY)
+unset(CMAKE_REQUIRED_LIBRARIES)
 
+set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_nquery HAVE_RES_NQUERY)
 check_function_exists(__res_nquery HAVE___RES_NQUERY)
+unset(CMAKE_REQUIRED_LIBRARIES)
 
+set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_search HAVE_RES_SEARCH)
 check_function_exists(__res_search HAVE___RES_SEARCH)
+unset(CMAKE_REQUIRED_LIBRARIES)
 
+set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_nsearch HAVE_RES_NSEARCH)
 check_function_exists(__res_nsearch HAVE___RES_NSEARCH)
-
 unset(CMAKE_REQUIRED_LIBRARIES)
 
 check_symbol_exists(ns_name_compress "sys/types.h;arpa/nameser.h" HAVE_NS_NAME_COMPRESS)
@@ -104,12 +115,18 @@ if (UNIX)
         find_library(SOCKET_LIBRARY socket)
         if (SOCKET_LIBRARY)
             check_library_exists(${SOCKET_LIBRARY} getaddrinfo "" HAVE_LIBSOCKET)
+            if (HAVE_LIBSOCKET)
+                list(APPEND _REQUIRED_LIBRARIES ${SOCKET_LIBRARY})
+            endif()
         endif()
 
         # libnsl/inet_pton (Solaris)
         find_library(NSL_LIBRARY nsl)
         if (NSL_LIBRARY)
             check_library_exists(${NSL_LIBRARY} inet_pton "" HAVE_LIBNSL)
+            if (HAVE_LIBNSL)
+                list(APPEND _REQUIRED_LIBRARIES ${NSL_LIBRARY})
+            endif()
         endif()
     endif (NOT LINUX)
 
@@ -118,7 +135,12 @@ endif (UNIX)
 
 find_library(DLFCN_LIBRARY dl)
 if (DLFCN_LIBRARY)
-    check_library_exists(${DLFCN_LIBRARY} dlopen "" HAVE_LIBDL)
+    list(APPEND _REQUIRED_LIBRARIES ${DLFCN_LIBRARY})
+else()
+    check_function_exists(dlopen HAVE_DLOPEN)
+    if (NOT HAVE_DLOPEN)
+        message(FATAL_ERROR "FATAL: No dlopen() function detected")
+    endif()
 endif()
 
 # IPV6
@@ -177,4 +199,4 @@ int main(void) {
 # ENDIAN
 test_big_endian(WORDS_BIGENDIAN)
 
-set(RWRAP_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY} ${DLFCN_LIBRARY} ${SOCKET_LIBRARY} ${NSL_LIBRARY} CACHE INTERNAL "resolv_wrapper required system libraries")
+set(RWRAP_REQUIRED_LIBRARIES ${_REQUIRED_LIBRARIES} CACHE INTERNAL "resolv_wrapper required system libraries")
