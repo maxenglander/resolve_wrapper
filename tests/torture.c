@@ -221,7 +221,8 @@ static void torture_setup_dns_srv_ip(void **state,
 		}
 
 		rc = stat(s->srv_pidfile, &sb);
-		usleep(200);
+		/* Wait 200 ms before retrying */
+		usleep(200 * 1000);
 	} while (rc != 0);
 	assert_int_equal(rc, 0);
 
