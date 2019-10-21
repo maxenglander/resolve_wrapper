@@ -633,8 +633,10 @@ int main(int argc, char **argv)
 		}
 	}
 
-	dns(sock);
-	close(sock);
+	if (sock != -1) {
+		dns(sock);
+		close(sock);
+	}
 
 	if (opts.daemon) {
 		unlink(opts.pidfile);
