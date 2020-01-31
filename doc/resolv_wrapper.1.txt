@@ -1,6 +1,7 @@
 resolv_wrapper(1)
 =================
-:revdate: 2019-01-04
+:author: The Samba Team
+:revdate: 2020-01-31
 
 NAME
 ----

@@ -1,13 +1,13 @@
 '\" t
 .\"     Title: resolv_wrapper
-.\"    Author: [FIXME: author] [see http://www.docbook.org/tdg5/en/html/author]
+.\"    Author: The Samba Team
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 2019-01-04
+.\"      Date: 2020-01-31
 .\"    Manual: \ \&
 .\"    Source: \ \&
 .\"  Language: English
 .\"
-.TH "RESOLV_WRAPPER" "1" "2019\-01\-04" "\ \&" "\ \&"
+.TH "RESOLV_WRAPPER" "1" "2020\-01\-31" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -93,6 +93,7 @@ AAAA    dc\&.cwrap\&.org fd00::5357:5f0a
 CNAME   kerberos\&.cwrap\&.org dc\&.cwrap\&.org
 SRV     _kerberos\&._tcp\&.cwrap\&.org kerberos\&.cwrap\&.org 88
 URI     _vpn\&.cwrap\&.org https://vpn\&.cwrap\&.org/VPN
+TXT     cwrap\&.org v=spf1 mx
 .fi
 .if n \{\
 .RE
@@ -164,3 +165,9 @@ $ LD_PRELOAD=libresolv_wrapper\&.so RESOLV_WRAPPER_CONF="\&./resolv\&.conf" kini
 .if n \{\
 .RE
 .\}
+.SH "AUTHOR"
+.PP
+\fBThe Samba Team\fR
+.RS 4
+Author.
+.RE
