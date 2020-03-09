@@ -57,52 +57,66 @@ endif()
 
 set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_send HAVE_RES_SEND)
+check_function_exists(res_9_send HAVE_RES_9_SEND)
 check_function_exists(__res_send HAVE___RES_SEND)
 unset(CMAKE_REQUIRED_LIBRARIES)
 
 set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_init HAVE_RES_INIT)
+check_function_exists(res_9_init HAVE_RES_9_INIT)
 check_function_exists(__res_init HAVE___RES_INIT)
 unset(CMAKE_REQUIRED_LIBRARIES)
 
 set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_ninit HAVE_RES_NINIT)
+check_function_exists(res_9_ninit HAVE_RES_9_NINIT)
 check_function_exists(__res_ninit HAVE___RES_NINIT)
 unset(CMAKE_REQUIRED_LIBRARIES)
 
 set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_close HAVE_RES_CLOSE)
+check_function_exists(res_9_close HAVE_RES_9_CLOSE)
 check_function_exists(__res_close HAVE___RES_CLOSE)
 unset(CMAKE_REQUIRED_LIBRARIES)
 
 set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_nclose HAVE_RES_NCLOSE)
+check_function_exists(res_9_nclose HAVE_RES_9_NCLOSE)
 check_function_exists(__res_nclose HAVE___RES_NCLOSE)
 unset(CMAKE_REQUIRED_LIBRARIES)
 
 set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_query HAVE_RES_QUERY)
+check_function_exists(res_9_query HAVE_RES_9_QUERY)
 check_function_exists(__res_query HAVE___RES_QUERY)
 unset(CMAKE_REQUIRED_LIBRARIES)
 
 set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_nquery HAVE_RES_NQUERY)
+check_function_exists(res_9_nquery HAVE_RES_9_NQUERY)
 check_function_exists(__res_nquery HAVE___RES_NQUERY)
 unset(CMAKE_REQUIRED_LIBRARIES)
 
 set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_search HAVE_RES_SEARCH)
+check_function_exists(res_9_search HAVE_RES_9_SEARCH)
 check_function_exists(__res_search HAVE___RES_SEARCH)
 unset(CMAKE_REQUIRED_LIBRARIES)
 
 set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_nsearch HAVE_RES_NSEARCH)
+check_function_exists(res_9_nsearch HAVE_RES_9_NSEARCH)
 check_function_exists(__res_nsearch HAVE___RES_NSEARCH)
 unset(CMAKE_REQUIRED_LIBRARIES)
 
 check_symbol_exists(ns_name_compress "sys/types.h;arpa/nameser.h" HAVE_NS_NAME_COMPRESS)
 
 if (UNIX)
+    # APPLE
+    if (APPLE)
+        add_definitions("-DBIND_8_COMPAT")
+    endif()
+
     if (NOT LINUX)
         # libsocket (Solaris)
         find_library(SOCKET_LIBRARY socket)

@@ -83,6 +83,7 @@ enum rwrap_dbglvl_e {
 	RWRAP_LOG_TRACE
 };
 
+
 static void rwrap_log(enum rwrap_dbglvl_e dbglvl, const char *func, const char *format, ...) PRINTF_ATTRIBUTE(3, 4);
 # define RWRAP_LOG(dbglvl, ...) rwrap_log((dbglvl), __func__, __VA_ARGS__)
 
@@ -1276,10 +1277,18 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 #include <dlfcn.h>
 
 typedef int (*__libc_res_ninit)(struct __res_state *state);
+typedef int (*__libc_res_9_ninit)(struct __res_state *state);
 typedef int (*__libc___res_ninit)(struct __res_state *state);
 typedef void (*__libc_res_nclose)(struct __res_state *state);
+typedef void (*__libc_res_9_nclose)(struct __res_state *state);
 typedef void (*__libc___res_nclose)(struct __res_state *state);
 typedef int (*__libc_res_nquery)(struct __res_state *state,
+				 const char *dname,
+				 int class,
+				 int type,
+				 unsigned char *answer,
+				 int anslen);
+typedef int (*__libc_res_9_nquery)(struct __res_state *state,
 				 const char *dname,
 				 int class,
 				 int type,
@@ -1292,6 +1301,12 @@ typedef int (*__libc___res_nquery)(struct __res_state *state,
 				   unsigned char *answer,
 				   int anslen);
 typedef int (*__libc_res_nsearch)(struct __res_state *state,
+				  const char *dname,
+				  int class,
+				  int type,
+				  unsigned char *answer,
+				  int anslen);
+typedef int (*__libc_res_9_nsearch)(struct __res_state *state,
 				  const char *dname,
 				  int class,
 				  int type,
@@ -1312,12 +1327,16 @@ typedef int (*__libc___res_nsearch)(struct __res_state *state,
 
 struct rwrap_libc_symbols {
 	RWRAP_SYMBOL_ENTRY(res_ninit);
+	RWRAP_SYMBOL_ENTRY(res_9_ninit);
 	RWRAP_SYMBOL_ENTRY(__res_ninit);
 	RWRAP_SYMBOL_ENTRY(res_nclose);
+	RWRAP_SYMBOL_ENTRY(res_9_nclose);
 	RWRAP_SYMBOL_ENTRY(__res_nclose);
 	RWRAP_SYMBOL_ENTRY(res_nquery);
+	RWRAP_SYMBOL_ENTRY(res_9_nquery);
 	RWRAP_SYMBOL_ENTRY(__res_nquery);
 	RWRAP_SYMBOL_ENTRY(res_nsearch);
+	RWRAP_SYMBOL_ENTRY(res_9_nsearch);
 	RWRAP_SYMBOL_ENTRY(__res_nsearch);
 };
 #undef RWRAP_SYMBOL_ENTRY
@@ -1494,6 +1513,10 @@ static int libc_res_ninit(struct __res_state *state)
 	rwrap_bind_symbol_libresolv(res_ninit);
 
 	return rwrap.libresolv.symbols._libc_res_ninit.f(state);
+#elif __APPLE__ && defined(HAVE_RES_9_NINIT)
+	rwrap_bind_symbol_libresolv(res_9_ninit);
+
+	return rwrap.libresolv.symbols._libc_res_9_ninit.f(state);
 #elif defined(HAVE___RES_NINIT)
 	rwrap_bind_symbol_libresolv(__res_ninit);
 
@@ -1510,6 +1533,10 @@ static void libc_res_nclose(struct __res_state *state)
 
 	rwrap.libresolv.symbols._libc_res_nclose.f(state);
 	return;
+#elif __APPLE__ && defined(HAVE_RES_9_NCLOSE)
+	rwrap_bind_symbol_libresolv(res_9_nclose);
+
+	rwrap.libresolv.symbols._libc_res_9_nclose.f(state);
 #elif defined(HAVE___RES_NCLOSE)
 	rwrap_bind_symbol_libresolv(__res_nclose);
 
@@ -1530,6 +1557,15 @@ static int libc_res_nquery(struct __res_state *state,
 	rwrap_bind_symbol_libresolv(res_nquery);
 
 	return rwrap.libresolv.symbols._libc_res_nquery.f(state,
+							  dname,
+							  class,
+							  type,
+							  answer,
+							  anslen);
+#elif __APPLE__ && defined(HAVE_RES_9_NQUERY)
+	rwrap_bind_symbol_libresolv(res_9_nquery);
+
+	return rwrap.libresolv.symbols._libc_res_9_nquery.f(state,
 							  dname,
 							  class,
 							  type,
@@ -1560,6 +1596,15 @@ static int libc_res_nsearch(struct __res_state *state,
 	rwrap_bind_symbol_libresolv(res_nsearch);
 
 	return rwrap.libresolv.symbols._libc_res_nsearch.f(state,
+							   dname,
+							   class,
+							   type,
+							   answer,
+							   anslen);
+#elif __APPLE__ && defined(HAVE_RES_9_NSEARCH)
+	rwrap_bind_symbol_libresolv(res_9_nsearch);
+
+	return rwrap.libresolv.symbols._libc_res_9_nsearch.f(state,
 							   dname,
 							   class,
 							   type,
@@ -1730,6 +1775,8 @@ static int rwrap_res_ninit(struct __res_state *state)
 
 #if !defined(res_ninit) && defined(HAVE_RES_NINIT)
 int res_ninit(struct __res_state *state)
+#elif __APPLE__ && defined(HAVE_RES_9_NINIT)
+int res_9_ninit(struct __res_state *state)
 #elif defined(HAVE___RES_NINIT)
 int __res_ninit(struct __res_state *state)
 #endif
@@ -1754,6 +1801,8 @@ static int rwrap_res_init(void)
 
 #if !defined(res_ninit) && defined(HAVE_RES_INIT)
 int res_init(void)
+#elif __APPLE__ && defined(HAVE_RES_9_INIT)
+int res_9_init(void)
 #elif defined(HAVE___RES_INIT)
 int __res_init(void)
 #endif
@@ -1784,6 +1833,8 @@ static void rwrap_res_nclose(struct __res_state *state)
 
 #if !defined(res_nclose) && defined(HAVE_RES_NCLOSE)
 void res_nclose(struct __res_state *state)
+#elif __APPLE__ && defined(HAVE_RES_9_NCLOSE)
+void res_9_nclose(struct __res_state *state)
 #elif defined(HAVE___RES_NCLOSE)
 void __res_nclose(struct __res_state *state)
 #endif
@@ -1802,6 +1853,8 @@ static void rwrap_res_close(void)
 
 #if defined(HAVE_RES_CLOSE)
 void res_close(void)
+#elif __APPLE__ && defined(HAVE_RES_9_CLOSE)
+void res_9_close(void)
 #elif defined(HAVE___RES_CLOSE)
 void __res_close(void)
 #endif
@@ -1862,6 +1915,13 @@ int res_nquery(struct __res_state *state,
 	       int type,
 	       unsigned char *answer,
 	       int anslen)
+#elif __APPLE__ && defined(HAVE_RES_9_NQUERY)
+int res_9_nquery(struct __res_state *state,
+		 const char *dname,
+		 int class,
+		 int type,
+		 unsigned char *answer,
+		 int anslen)
 #elif defined(HAVE___RES_NQUERY)
 int __res_nquery(struct __res_state *state,
 		 const char *dname,
@@ -1907,6 +1967,12 @@ int res_query(const char *dname,
 	      int type,
 	      unsigned char *answer,
 	      int anslen)
+#elif __APPLE__ && defined(HAVE_RES_9_QUERY)
+int res_9_query(const char *dname,
+		int class,
+		int type,
+		unsigned char *answer,
+		int anslen)
 #elif defined(HAVE___RES_QUERY)
 int __res_query(const char *dname,
 		int class,
@@ -1970,6 +2036,13 @@ int res_nsearch(struct __res_state *state,
 		int type,
 		unsigned char *answer,
 		int anslen)
+#elif defined(HAVE_RES_9_NSEARCH)
+int res_9_nsearch(struct __res_state *state,
+		  const char *dname,
+		  int class,
+		  int type,
+		  unsigned char *answer,
+		  int anslen)
 #elif defined(HAVE___RES_NSEARCH)
 int __res_nsearch(struct __res_state *state,
 		  const char *dname,
@@ -2015,6 +2088,12 @@ int res_search(const char *dname,
 	       int type,
 	       unsigned char *answer,
 	       int anslen)
+#elif __APPLE__ && defined(HAVE_RES_9_SEARCH)
+int res_9_search(const char *dname,
+		 int class,
+		 int type,
+		 unsigned char *answer,
+		 int anslen)
 #elif defined(HAVE___RES_SEARCH)
 int __res_search(const char *dname,
 		 int class,
