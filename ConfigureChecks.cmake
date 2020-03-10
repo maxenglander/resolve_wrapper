@@ -176,6 +176,12 @@ int main(void) {
 check_struct_has_member("struct __res_state" _u._ext.nsaddrs
                         "sys/socket.h;netinet/in.h;resolv.h"
                         HAVE_RES_STATE_U_EXT_NSADDRS)
+check_struct_has_member("union res_sockaddr_union" sin
+                        "sys/socket.h;netinet/in.h;resolv.h"
+                        HAVE_RES_SOCKADDR_UNION_SIN)
+check_struct_has_member("union res_sockaddr_union" sin6
+                        "sys/socket.h;netinet/in.h;resolv.h"
+                        HAVE_RES_SOCKADDR_UNION_SIN6)
 
 check_c_source_compiles("
 void log_fn(const char *format, ...) __attribute__ ((format (printf, 1, 2)));

@@ -92,6 +92,9 @@ static void test_res_ninit(void **state)
 	int i;
 	int rv;
 	char straddr[INET6_ADDRSTRLEN] = { '\0' };
+#ifdef HAVE_RES_SOCKADDR_UNION_SIN
+	union res_sockaddr_union set[MAXNS*5];
+#endif
 #ifdef HAVE_RES_STATE_U_EXT_NSADDRS
 	struct sockaddr_in6 *sa6;
 #endif
@@ -131,6 +134,41 @@ static void test_res_ninit(void **state)
 	 * case on all systems encountered so far.
 	 */
 	assert_int_equal(MAXNS, 3);
+#ifdef HAVE_RES_SOCKADDR_UNION_SIN
+	memset(set, 0, sizeof(set));
+	rv = res_getservers(&dnsstate, set, MAXNS+5);
+	assert_int_equal(rv, MAXNS);
+
+	/* IPv4 */
+	assert_int_equal(set[0].sin.sin_family, AF_INET);
+	assert_int_equal(set[0].sin.sin_port, htons(53));
+	inet_ntop(AF_INET, &(set[0].sin.sin_addr),
+		  straddr, INET6_ADDRSTRLEN);
+	assert_string_equal(nameservers[0], straddr);
+
+	assert_int_equal(set[1].sin.sin_family, AF_INET);
+	assert_int_equal(set[1].sin.sin_port, htons(53));
+	inet_ntop(AF_INET, &(set[1].sin.sin_addr), straddr, INET6_ADDRSTRLEN);
+	assert_string_equal(nameservers[1], straddr);
+
+#ifdef HAVE_RES_SOCKADDR_UNION_SIN6
+	/* IPv6 */
+	assert_int_equal(set[2].sin6.sin6_family, AF_INET6);
+	assert_int_equal(set[2].sin6.sin6_port, htons(53));
+	inet_ntop(AF_INET6, &(set[2].sin6.sin6_addr), straddr, INET6_ADDRSTRLEN);
+	assert_string_equal(nameservers[2], straddr);
+#else /* ! HAVE_RES_SOCKADDR_UNION_SIN6 */
+	/*
+	 * On platforms that don't support IPv6, the v6 address is skipped
+	 * and we end up reading three v4 addresses.
+	 */
+	assert_int_equal(set[2].sin.sin_family, AF_INET);
+	assert_int_equal(set[2].sin.sin_port, htons(53));
+	inet_ntop(AF_INET, &(set[2].sin.sin_addr), straddr, INET6_ADDRSTRLEN);
+	assert_string_equal(nameservers[3], straddr);
+#endif /* ! HAVE_RES_SOCKADDR_UNION_SIN6 */
+
+#else /* ! HAVE_RES_SOCKADDR_UNION_SIN */
 	assert_int_equal(dnsstate.nscount, MAXNS);
 
 	/* Validate the servers. */
@@ -173,6 +211,8 @@ static void test_res_ninit(void **state)
 		  straddr, INET6_ADDRSTRLEN);
 	assert_string_equal(nameservers[3], straddr);
 #endif
+
+#endif /* ! HAVE_RES_SOCKADDR_UNION_SIN */
 
 	res_nclose(&dnsstate);
 }

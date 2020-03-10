@@ -52,7 +52,7 @@
 
 #include <resolv.h>
 
-#ifdef HAVE_RES_STATE_U_EXT_NSADDRS
+#if defined(HAVE_RES_STATE_U_EXT_NSADDRS) || defined(HAVE_RES_SOCKADDR_UNION_SIN6)
 #define HAVE_RESOLV_IPV6_NSADDRS 1
 #endif
 
@@ -1616,6 +1616,45 @@ static size_t rwrap_get_nameservers(struct __res_state *state,
 				    size_t nserv,
 				    union rwrap_sockaddr *nsaddrs)
 {
+#ifdef HAVE_RES_SOCKADDR_UNION_SIN
+	union res_sockaddr_union set[MAXNS];
+	size_t i;
+	int rc;
+
+	memset(set, 0, sizeof(set));
+	memset(nsaddrs, 0, sizeof(*nsaddrs) * nserv);
+
+	if (nserv > MAXNS) {
+		nserv = MAXNS;
+	}
+
+	rc = res_getservers(state, set, nserv);
+	if (rc <= 0) {
+		return 0;
+	}
+	if (rc < nserv) {
+		nserv = rc;
+	}
+
+	for (i = 0; i < nserv; i++) {
+		switch (set[i].sin.sin_family) {
+		case AF_INET:
+			nsaddrs[i] = (union rwrap_sockaddr) {
+				.in = set[i].sin,
+			};
+			break;
+#ifdef HAVE_RES_SOCKADDR_UNION_SIN6
+		case AF_INET6:
+			nsaddrs[i] = (union rwrap_sockaddr) {
+				.in6 = set[i].sin6,
+			};
+			break;
+#endif
+		}
+	}
+
+	return nserv;
+#else /* ! HAVE_RES_SOCKADDR_UNION_SIN */
 	size_t i;
 
 	memset(nsaddrs, 0, sizeof(*nsaddrs) * nserv);
@@ -1640,6 +1679,7 @@ static size_t rwrap_get_nameservers(struct __res_state *state,
 	}
 
 	return nserv;
+#endif /* ! HAVE_RES_SOCKADDR_UNION_SIN */
 }
 
 static void rwrap_log_nameservers(enum rwrap_dbglvl_e dbglvl,
@@ -1678,6 +1718,9 @@ static void rwrap_log_nameservers(enum rwrap_dbglvl_e dbglvl,
 
 static void rwrap_reset_nameservers(struct __res_state *state)
 {
+#ifdef HAVE_RES_SOCKADDR_UNION_SIN
+	res_setservers(state, NULL, 0);
+#else /* ! HAVE_RES_SOCKADDR_UNION_SIN */
 #ifdef HAVE_RES_STATE_U_EXT_NSADDRS
 	size_t i;
 
@@ -1697,12 +1740,51 @@ static void rwrap_reset_nameservers(struct __res_state *state)
 #endif
 	memset(state->nsaddr_list, 0, sizeof(state->nsaddr_list));
 	state->nscount = 0;
+#endif /* ! HAVE_RES_SOCKADDR_UNION_SIN */
 }
 
 static int rwrap_set_nameservers(struct __res_state *state,
 				 size_t nserv,
 				 const union rwrap_sockaddr *nsaddrs)
 {
+#ifdef HAVE_RES_SOCKADDR_UNION_SIN
+	union res_sockaddr_union set[MAXNS];
+	size_t i;
+
+	memset(set, 0, sizeof(set));
+
+	if (nserv > MAXNS) {
+		nserv = MAXNS;
+	}
+
+	rwrap_reset_nameservers(state);
+
+	for (i = 0; i < nserv; i++) {
+		switch (nsaddrs[i].sa.sa_family) {
+		case AF_INET:
+			set[i] = (union res_sockaddr_union) {
+				.sin = nsaddrs[i].in,
+			};
+			break;
+#ifdef HAVE_RES_SOCKADDR_UNION_SIN6
+		case AF_INET6:
+			set[i] = (union res_sockaddr_union) {
+				.sin6 = nsaddrs[i].in6,
+			};
+			break;
+#endif
+		default:
+			RWRAP_LOG(RWRAP_LOG_ERROR,
+				  "Internal error unhandled sa_family=%d",
+				  nsaddrs[i].sa.sa_family);
+			errno = ENOSYS;
+			return -1;
+		}
+	}
+
+	res_setservers(state, set, nserv);
+	return 0;
+#else /* ! HAVE_RES_SOCKADDR_UNION_SIN */
 	size_t i;
 
 	if (nserv > MAXNS) {
@@ -1747,6 +1829,7 @@ static int rwrap_set_nameservers(struct __res_state *state,
 	state->nscount = i;
 
 	return 0;
+#endif /* ! HAVE_RES_SOCKADDR_UNION_SIN */
 }
 
 static int rwrap_parse_resolv_conf(struct __res_state *state,
