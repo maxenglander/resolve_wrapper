@@ -177,6 +177,12 @@ static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 
 #define RWRAP_MAX_RECURSION 64
 
+union rwrap_sockaddr {
+	struct sockaddr sa;
+	struct sockaddr_in in;
+	struct sockaddr_in6 in6;
+};
+
 /* Priority and weight can be omitted from the hosts file, but need to be part
  * of the output
  */
@@ -1606,6 +1612,70 @@ static int libc_res_nsearch(struct __res_state *state,
  *   RES_HELPER
  ***************************************************************************/
 
+static size_t rwrap_get_nameservers(struct __res_state *state,
+				    size_t nserv,
+				    union rwrap_sockaddr *nsaddrs)
+{
+	size_t i;
+
+	memset(nsaddrs, 0, sizeof(*nsaddrs) * nserv);
+
+	if (nserv > (size_t)state->nscount) {
+		nserv = (size_t)state->nscount;
+	}
+
+	for (i = 0; i < nserv; i++) {
+#ifdef HAVE_RES_STATE_U_EXT_NSADDRS
+		if (state->_u._ext.nsaddrs[i] != NULL) {
+			nsaddrs[i] = (union rwrap_sockaddr) {
+				.in6 = *state->_u._ext.nsaddrs[i],
+			};
+		} else
+#endif /* HAVE_RES_STATE_U_EXT_NSADDRS */
+		{
+			nsaddrs[i] = (union rwrap_sockaddr) {
+				.in = state->nsaddr_list[i],
+			};
+		}
+	}
+
+	return nserv;
+}
+
+static void rwrap_log_nameservers(enum rwrap_dbglvl_e dbglvl,
+				  const char *func,
+				  struct __res_state *state)
+{
+	union rwrap_sockaddr nsaddrs[MAXNS];
+	size_t nserv = MAXNS;
+	size_t i;
+
+	memset(nsaddrs, 0, sizeof(nsaddrs));
+	nserv = rwrap_get_nameservers(state, nserv, nsaddrs);
+	for (i = 0; i < nserv; i++) {
+		char ip[INET6_ADDRSTRLEN];
+
+		switch (nsaddrs[i].sa.sa_family) {
+		case AF_INET:
+			inet_ntop(AF_INET, &(nsaddrs[i].in.sin_addr),
+				  ip, sizeof(ip));
+			break;
+		case AF_INET6:
+			inet_ntop(AF_INET6, &(nsaddrs[i].in6.sin6_addr),
+				  ip, sizeof(ip));
+			break;
+		default:
+			snprintf(ip, sizeof(ip), "<unknown sa_family=%d",
+				 nsaddrs[i].sa.sa_family);
+			break;
+		}
+
+		rwrap_log(dbglvl, func,
+			  "        nameserver: %s",
+			  ip);
+	}
+}
+
 static void rwrap_reset_nameservers(struct __res_state *state)
 {
 #ifdef HAVE_RES_STATE_U_EXT_NSADDRS
@@ -1850,23 +1920,11 @@ static int rwrap_res_nquery(struct __res_state *state,
 {
 	int rc;
 	const char *fake_hosts;
-#ifndef NDEBUG
-	int i;
-#endif
 
 	RWRAP_LOG(RWRAP_LOG_TRACE,
 		  "Resolve the domain name [%s] - class=%d, type=%d",
 		  dname, class, type);
-#ifndef NDEBUG
-	for (i = 0; i < state->nscount; i++) {
-		char ip[INET6_ADDRSTRLEN];
-
-		inet_ntop(AF_INET, &state->nsaddr_list[i].sin_addr, ip, sizeof(ip));
-		RWRAP_LOG(RWRAP_LOG_TRACE,
-			  "        nameserver: %s",
-			  ip);
-	}
-#endif
+	rwrap_log_nameservers(RWRAP_LOG_TRACE, __func__, state);
 
 	fake_hosts = getenv("RESOLV_WRAPPER_HOSTS");
 	if (fake_hosts != NULL) {
@@ -1959,23 +2017,11 @@ static int rwrap_res_nsearch(struct __res_state *state,
 {
 	int rc;
 	const char *fake_hosts;
-#ifndef NDEBUG
-	int i;
-#endif
 
 	RWRAP_LOG(RWRAP_LOG_TRACE,
 		  "Resolve the domain name [%s] - class=%d, type=%d",
 		  dname, class, type);
-#ifndef NDEBUG
-	for (i = 0; i < state->nscount; i++) {
-		char ip[INET6_ADDRSTRLEN];
-
-		inet_ntop(AF_INET, &state->nsaddr_list[i].sin_addr, ip, sizeof(ip));
-		RWRAP_LOG(RWRAP_LOG_TRACE,
-			  "        nameserver: %s",
-			  ip);
-	}
-#endif
+	rwrap_log_nameservers(RWRAP_LOG_TRACE, __func__, state);
 
 	fake_hosts = getenv("RESOLV_WRAPPER_HOSTS");
 	if (fake_hosts != NULL) {
