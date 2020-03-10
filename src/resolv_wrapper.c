@@ -1606,12 +1606,37 @@ static int libc_res_nsearch(struct __res_state *state,
  *   RES_HELPER
  ***************************************************************************/
 
+static void rwrap_reset_nameservers(struct __res_state *state)
+{
+#ifdef HAVE_RES_STATE_U_EXT_NSADDRS
+	size_t i;
+
+	for (i = 0; i < (size_t)state->nscount; i++) {
+		if (state->_u._ext.nssocks[i] != -1) {
+			close(state->_u._ext.nssocks[i]);
+			state->_u._ext.nssocks[i] = -1;
+		}
+		SAFE_FREE(state->_u._ext.nsaddrs[i]);
+	}
+	memset(&state->_u._ext, 0, sizeof(state->_u._ext));
+	for (i = 0; i < MAXNS; i++) {
+		state->_u._ext.nssocks[i] = -1;
+		state->_u._ext.nsmap[i] = MAXNS + 1;
+	}
+	state->ipv6_unavail = false;
+#endif
+	memset(state->nsaddr_list, 0, sizeof(state->nsaddr_list));
+	state->nscount = 0;
+}
+
 static int rwrap_parse_resolv_conf(struct __res_state *state,
 				   const char *resolv_conf)
 {
 	FILE *fp;
 	char buf[BUFSIZ];
 	int nserv = 0;
+
+	rwrap_reset_nameservers(state);
 
 	fp = fopen(resolv_conf, "r");
 	if (fp == NULL) {
@@ -1735,36 +1760,6 @@ static int rwrap_res_ninit(struct __res_state *state)
 		const char *resolv_conf = getenv("RESOLV_WRAPPER_CONF");
 
 		if (resolv_conf != NULL) {
-			/* Delete name servers */
-#ifdef HAVE_RESOLV_IPV6_NSADDRS
-			uint16_t i;
-
-			for (i = 0; i < state->nscount; i++) {
-				if (state->_u._ext.nssocks[i] != -1) {
-					close(state->_u._ext.nssocks[i]);
-					state->_u._ext.nssocks[i] = -1;
-				}
-
-				SAFE_FREE(state->_u._ext.nsaddrs[i]);
-			}
-#endif
-
-			state->nscount = 0;
-			memset(state->nsaddr_list, 0, sizeof(state->nsaddr_list));
-
-#ifdef HAVE_RESOLV_IPV6_NSADDRS
-			state->ipv6_unavail = false;
-			state->_u._ext.nsinit = 0;
-			state->_u._ext.nscount = 0;
-			state->_u._ext.nscount6 = 0;
-			for (i = 0; i < MAXNS; i++) {
-				state->_u._ext.nsaddrs[i] = NULL;
-				state->_u._ext.nssocks[i] = -1;
-				state->_u._ext.nsmap[i] = MAXNS;
-			}
-#endif
-
-			/* And parse the new name servers */
 			rc = rwrap_parse_resolv_conf(state, resolv_conf);
 		}
 	}
@@ -1811,6 +1806,7 @@ int __res_init(void)
 
 static void rwrap_res_nclose(struct __res_state *state)
 {
+	rwrap_reset_nameservers(state);
 	libc_res_nclose(state);
 }
 
