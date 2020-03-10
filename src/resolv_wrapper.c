@@ -1699,14 +1699,65 @@ static void rwrap_reset_nameservers(struct __res_state *state)
 	state->nscount = 0;
 }
 
+static int rwrap_set_nameservers(struct __res_state *state,
+				 size_t nserv,
+				 const union rwrap_sockaddr *nsaddrs)
+{
+	size_t i;
+
+	if (nserv > MAXNS) {
+		nserv = MAXNS;
+	}
+	rwrap_reset_nameservers(state);
+
+	for (i = 0; i < nserv; i++) {
+		switch (nsaddrs[i].sa.sa_family) {
+		case AF_INET:
+			state->nsaddr_list[i] = nsaddrs[i].in;
+			break;
+#ifdef HAVE_RES_STATE_U_EXT_NSADDRS
+		case AF_INET6:
+			state->_u._ext.nsaddrs[i] = malloc(sizeof(nsaddrs[i].in6));
+			if (state->_u._ext.nsaddrs[i] == NULL) {
+				rwrap_reset_nameservers(state);
+				errno = ENOMEM;
+				return -1;
+			}
+			*state->_u._ext.nsaddrs[i] = nsaddrs[i].in6;
+			state->_u._ext.nssocks[i] = -1;
+			state->_u._ext.nsmap[i] = MAXNS + 1;
+			state->_u._ext.nscount6++;
+			break;
+#endif
+		default:
+			RWRAP_LOG(RWRAP_LOG_ERROR,
+				  "Internal error unhandled sa_family=%d",
+				  nsaddrs[i].sa.sa_family);
+			rwrap_reset_nameservers(state);
+			errno = ENOSYS;
+			return -1;
+		}
+	}
+
+	/*
+	 * note that state->_u._ext.nscount is left as 0,
+	 * this matches glibc and allows resolv wrapper
+	 * to work with most (maybe all) glibc versions.
+	 */
+	state->nscount = i;
+
+	return 0;
+}
+
 static int rwrap_parse_resolv_conf(struct __res_state *state,
 				   const char *resolv_conf)
 {
 	FILE *fp;
 	char buf[BUFSIZ];
-	int nserv = 0;
+	size_t nserv = 0;
+	union rwrap_sockaddr nsaddrs[MAXNS];
 
-	rwrap_reset_nameservers(state);
+	memset(nsaddrs, 0, sizeof(nsaddrs));
 
 	fp = fopen(resolv_conf, "r");
 	if (fp == NULL) {
@@ -1726,6 +1777,7 @@ static int rwrap_parse_resolv_conf(struct __res_state *state,
 
 		if (RESOLV_MATCH(buf, "nameserver") && nserv < MAXNS) {
 			struct in_addr a;
+			struct in6_addr a6;
 			char *q;
 			int ok;
 
@@ -1744,66 +1796,45 @@ static int rwrap_parse_resolv_conf(struct __res_state *state,
 
 			ok = inet_pton(AF_INET, p, &a);
 			if (ok) {
-				state->nsaddr_list[nserv] = (struct sockaddr_in) {
-					.sin_family = AF_INET,
-					.sin_addr = a,
-					.sin_port = htons(53),
-					.sin_zero = { 0 },
+				nsaddrs[nserv] = (union rwrap_sockaddr) {
+					.in = {
+						.sin_family = AF_INET,
+						.sin_addr = a,
+						.sin_port = htons(53),
+						.sin_zero = { 0 },
+					},
 				};
 
 				nserv++;
-			} else {
+				continue;
+			}
+
+			ok = inet_pton(AF_INET6, p, &a6);
+			if (ok) {
 #ifdef HAVE_RESOLV_IPV6_NSADDRS
-				/* IPv6 */
-				struct in6_addr a6;
-				ok = inet_pton(AF_INET6, p, &a6);
-				if (ok) {
-					struct sockaddr_in6 *sa6;
+				nsaddrs[nserv] = (union rwrap_sockaddr) {
+					.in6 = {
 
-					sa6 = malloc(sizeof(*sa6));
-					if (sa6 == NULL) {
-						fclose(fp);
-						return -1;
-					}
-
-					sa6->sin6_family = AF_INET6;
-					sa6->sin6_port = htons(53);
-					sa6->sin6_flowinfo = 0;
-					sa6->sin6_addr = a6;
-
-					state->_u._ext.nsaddrs[nserv] = sa6;
-					state->_u._ext.nssocks[nserv] = -1;
-					state->_u._ext.nsmap[nserv] = MAXNS + 1;
-
-					state->_u._ext.nscount6++;
-					nserv++;
-				} else {
-					RWRAP_LOG(RWRAP_LOG_ERROR,
-						"Malformed DNS server");
-					continue;
-				}
+						.sin6_family = AF_INET6,
+						.sin6_port = htons(53),
+						.sin6_flowinfo = 0,
+						.sin6_addr = a6,
+					},
+				};
+				nserv++;
+				continue;
 #else /* !HAVE_RESOLV_IPV6_NSADDRS */
-				/*
-				 * BSD uses an opaque structure to store the
-				 * IPv6 addresses. So we can not simply store
-				 * these addresses the same way as above.
-				 */
 				RWRAP_LOG(RWRAP_LOG_WARN,
 					  "resolve_wrapper does not support "
 					  "IPv6 on this platform");
-					continue;
+				continue;
 #endif
 			}
+
+			RWRAP_LOG(RWRAP_LOG_ERROR, "Malformed DNS server[%s]", p);
 			continue;
 		} /* TODO: match other keywords */
 	}
-
-	/*
-	 * note that state->_u._ext.nscount is left as 0,
-	 * this matches glibc and allows resolv wrapper
-	 * to work with most (maybe all) glibc versions.
-	 */
-	state->nscount = nserv;
 
 	if (ferror(fp)) {
 		RWRAP_LOG(RWRAP_LOG_ERROR,
@@ -1814,7 +1845,16 @@ static int rwrap_parse_resolv_conf(struct __res_state *state,
 	}
 
 	fclose(fp);
-	return 0;
+
+	if (nserv == 0) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "No usable nameservers found in %s",
+			  resolv_conf);
+		errno = ESRCH;
+		return -1;
+	}
+
+	return rwrap_set_nameservers(state, nserv, nsaddrs);
 }
 
 /****************************************************************************
