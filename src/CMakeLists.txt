@@ -5,7 +5,8 @@ target_link_libraries(resolv_wrapper ${RWRAP_REQUIRED_LIBRARIES})
 
 target_compile_options(resolv_wrapper
                        PRIVATE
-                           ${DEFAULT_C_COMPILE_FLAGS})
+                           ${DEFAULT_C_COMPILE_FLAGS}
+                          -D_GNU_SOURCE)
 target_include_directories(resolv_wrapper
                            PRIVATE ${CMAKE_BINARY_DIR})
 

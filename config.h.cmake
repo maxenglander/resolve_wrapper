@@ -13,7 +13,14 @@
 #cmakedefine HAVE_RESOLV_H 1
 #cmakedefine HAVE_ARPA_NAMESER_H 1
 
+/**************************** SYMBOLS ****************************/
+
+#cmakedefine HAVE_PROGRAM_INVOCATION_SHORT_NAME 1
+
 /*************************** FUNCTIONS ***************************/
+
+#cmakedefine HAVE_GETPROGNAME 1
+#cmakedefine HAVE_GETEXECNAME 1
 
 #cmakedefine HAVE_RES_INIT 1
 #cmakedefine HAVE___RES_INIT 1

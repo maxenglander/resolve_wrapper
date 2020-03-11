@@ -44,7 +44,17 @@ check_include_file(sys/types.h HAVE_SYS_TYPES_H)
 check_include_file(resolv.h HAVE_RESOLV_H)
 check_include_file(arpa/nameser.h HAVE_ARPA_NAMESER_H)
 
+# SYMBOLS
+set(CMAKE_REQUIRED_FLAGS -D_GNU_SOURCE)
+check_symbol_exists(program_invocation_short_name
+                    "errno.h"
+                    HAVE_PROGRAM_INVOCATION_SHORT_NAME)
+unset(CMAKE_REQUIRED_FLAGS)
+
 # FUNCTIONS
+check_function_exists(getprogname HAVE_GETPROGNAME)
+check_function_exists(getexecname HAVE_GETEXECNAME)
+
 find_library(RESOLV_LIRBRARY resolv)
 if (RESOLV_LIRBRARY)
     set(HAVE_LIBRESOLV TRUE)
