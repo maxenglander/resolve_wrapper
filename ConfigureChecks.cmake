@@ -173,7 +173,9 @@ int main(void) {
     return 0;
 }" HAVE_IPV6)
 
-check_struct_has_member("struct __res_state" _u._ext.nsaddrs resolv.h HAVE_RESOLV_IPV6_NSADDRS)
+check_struct_has_member("struct __res_state" _u._ext.nsaddrs
+                        "sys/socket.h;netinet/in.h;resolv.h"
+                        HAVE_RES_STATE_U_EXT_NSADDRS)
 
 check_c_source_compiles("
 void log_fn(const char *format, ...) __attribute__ ((format (printf, 1, 2)));

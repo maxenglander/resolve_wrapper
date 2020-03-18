@@ -92,7 +92,7 @@ static void test_res_ninit(void **state)
 	int i;
 	int rv;
 	char straddr[INET6_ADDRSTRLEN] = { '\0' };
-#ifdef HAVE_RESOLV_IPV6_NSADDRS
+#ifdef HAVE_RES_STATE_U_EXT_NSADDRS
 	struct sockaddr_in6 *sa6;
 #endif
 
@@ -141,7 +141,7 @@ static void test_res_ninit(void **state)
 	inet_ntop(AF_INET, &(dnsstate.nsaddr_list[0].sin_addr),
 		  straddr, INET6_ADDRSTRLEN);
 	assert_string_equal(nameservers[0], straddr);
-#ifdef HAVE_RESOLV_IPV6_NSADDRS
+#ifdef HAVE_RES_STATE_U_EXT_NSADDRS
 	assert_null(dnsstate._u._ext.nsaddrs[0]);
 #endif
 
@@ -150,11 +150,19 @@ static void test_res_ninit(void **state)
 	inet_ntop(AF_INET, &(dnsstate.nsaddr_list[1].sin_addr),
 		  straddr, INET6_ADDRSTRLEN);
 	assert_string_equal(nameservers[1], straddr);
-#ifdef HAVE_RESOLV_IPV6_NSADDRS
+#ifdef HAVE_RES_STATE_U_EXT_NSADDRS
 	assert_null(dnsstate._u._ext.nsaddrs[1]);
 #endif
 
-#ifndef HAVE_RESOLV_IPV6_NSADDRS
+#ifdef HAVE_RES_STATE_U_EXT_NSADDRS
+	/* IPv6 */
+	assert_non_null(dnsstate._u._ext.nsaddrs[2]);
+	sa6 = dnsstate._u._ext.nsaddrs[2];
+	assert_int_equal(sa6->sin6_family, AF_INET6);
+	assert_int_equal(sa6->sin6_port, htons(53));
+	inet_ntop(AF_INET6, &(sa6->sin6_addr), straddr, INET6_ADDRSTRLEN);
+	assert_string_equal(nameservers[2], straddr);
+#else
 	/*
 	 * On platforms that don't support IPv6, the v6 address is skipped
 	 * and we end up reading three v4 addresses.
@@ -164,14 +172,6 @@ static void test_res_ninit(void **state)
 	inet_ntop(AF_INET, &(dnsstate.nsaddr_list[2].sin_addr),
 		  straddr, INET6_ADDRSTRLEN);
 	assert_string_equal(nameservers[3], straddr);
-#else
-	/* IPv6 */
-	assert_non_null(dnsstate._u._ext.nsaddrs[2]);
-	sa6 = dnsstate._u._ext.nsaddrs[2];
-	assert_int_equal(sa6->sin6_family, AF_INET6);
-	assert_int_equal(sa6->sin6_port, htons(53));
-	inet_ntop(AF_INET6, &(sa6->sin6_addr), straddr, INET6_ADDRSTRLEN);
-	assert_string_equal(nameservers[2], straddr);
 #endif
 
 	res_nclose(&dnsstate);

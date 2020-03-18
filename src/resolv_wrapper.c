@@ -52,6 +52,10 @@
 
 #include <resolv.h>
 
+#ifdef HAVE_RES_STATE_U_EXT_NSADDRS
+#define HAVE_RESOLV_IPV6_NSADDRS 1
+#endif
+
 /* GCC has printf type attribute check. */
 #ifdef HAVE_ATTRIBUTE_PRINTF_FORMAT
 #define PRINTF_ATTRIBUTE(a,b) __attribute__ ((__format__ (__printf__, a, b)))
