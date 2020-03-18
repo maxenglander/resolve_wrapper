@@ -56,11 +56,6 @@ else()
 endif()
 
 set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
-check_function_exists(res_send HAVE_RES_SEND)
-check_function_exists(__res_send HAVE___RES_SEND)
-unset(CMAKE_REQUIRED_LIBRARIES)
-
-set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 check_function_exists(res_init HAVE_RES_INIT)
 check_function_exists(__res_init HAVE___RES_INIT)
 unset(CMAKE_REQUIRED_LIBRARIES)
