@@ -309,7 +309,7 @@ static int rwrap_create_fake_uri_rr(const char *key,
 	NEXT_KEY(str_prio, str_weight);
 	if (uri == NULL) {
 		RWRAP_LOG(RWRAP_LOG_ERROR,
-			  "Malformed URI entry [%s]\n", value);
+			  "Malformed URI entry [<null>]\n");
 		return -1;
 	}
 
