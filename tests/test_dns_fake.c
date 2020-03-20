@@ -138,7 +138,7 @@ static void test_res_fake_a_query_trailing_dot(void **state)
 			answer, ANSIZE);
 	assert_in_range(rv, 1, 100);
 
-	ns_initparse(answer, 256, &handle);
+	ns_initparse(answer, sizeof(answer), &handle);
 	/* The query must finish w/o an error, have one answer and the answer
 	 * must be a parseable RR of type A and have the address that our
 	 * fake hosts file contains
@@ -147,7 +147,8 @@ static void test_res_fake_a_query_trailing_dot(void **state)
 	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
 	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
 	assert_int_equal(ns_rr_type(rr), ns_t_a);
-	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr), addr, 256));
+	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr), addr, sizeof(addr)));
+
 	assert_string_equal(addr, "127.0.0.21");
 
 	res_nclose(&dnsstate);
