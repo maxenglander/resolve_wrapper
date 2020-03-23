@@ -5,6 +5,7 @@
 #include <setjmp.h>
 #include <cmocka.h>
 
+#include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -35,6 +36,7 @@ static int setup(void **state)
 	test_state->resolv_conf_path = strdup(RWRAP_RESOLV_CONF_TMPL);
 	assert_non_null(test_state->resolv_conf_path);
 	test_state->rc_fd = mkstemp(test_state->resolv_conf_path);
+	assert_return_code(test_state->rc_fd, errno);
 	assert_non_null(test_state->resolv_conf_path);
 	test_state->resolv_conf = fdopen(test_state->rc_fd, "a");
 	assert_non_null(test_state->resolv_conf);
