@@ -163,6 +163,7 @@ static char *torture_setup_resolv_conf(const char **nameservers, size_t num_ns)
 	path = strdup(RWRAP_RESOLV_CONF_TMPL);
 	assert_non_null(path);
 	rc_fd = mkstemp(path);
+	assert_return_code(rc_fd, errno);
 	assert_non_null(path);
 	resolv_conf = fdopen(rc_fd, "a");
 	assert_non_null(resolv_conf);
